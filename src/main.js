@@ -1,40 +1,57 @@
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
 const video = document.getElementById('bg-video');
-const font = new FontFace('CustomFont', 'url(/BigCaslon.ttf)');
+const font = new FontFace('CustomFont', 'url(BigCaslon.otf)');
+import data from './data.js';
 
 font.load().then((font) => {
   document.fonts.add(font);
 });
 
+let sentences = [];
+let lastSentenceIndex = -1;
+let currentSentence = '';
+
+function randomSentence() {
+  sentences = data;
+  if (sentences.length === 0) return '';
+  let idx;
+  do {
+    idx = Math.floor(Math.random() * sentences.length);
+  } while (idx === lastSentenceIndex);
+  lastSentenceIndex = idx;
+  return sentences[idx];
+}
+
 /* ── State machine ────────────────────────────────── */
-const State = Object.freeze({ IDLE: 'IDLE', Text: 'Text', RETURN: 'RETURN' });
+const State = Object.freeze({ IDLE: 'IDLE', Text: 'Text' });
 let state = State.IDLE;
 
-/* ── Text animation bookkeeping ─────────────────── */
-const TEXT_STAGE = 1800;   // how long the text stays fully visible
-const TRANSITION_DURATION = 500; // fade-in and fade-out duration
+/* ── Text display duration ───────────────────────── */
+const TEXT_STAGE = 3000;
 let TextStartTime = 0;
-let TextAlpha = 0;
 
 /* ── Resize handling ──────────────────────────────── */
 function resize() {
-  // Use device pixel ratio for crisp rendering on HiDPI screens
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+  ctx.scale(dpr, dpr);
 }
+
 window.addEventListener('resize', resize);
 resize();
 
-/* ── Video: start playing as soon as enough data is ready ── */
+/* ── Video ────────────────────────────────────────── */
 video.addEventListener('canplay', () => video.play().catch(() => { }));
-video.play().catch(() => { }); // attempt immediately (may be blocked until user gesture)
+video.play().catch(() => { });
 
 /* ── Helpers ──────────────────────────────────────── */
 function cssW() { return window.innerWidth; }
 function cssH() { return window.innerHeight; }
 
-/** Returns the hit-square rect in CSS pixels */
 function touchZone() {
   const cx = cssW() / 2;
   const cy = cssH() / 2;
@@ -46,18 +63,14 @@ function touchZone() {
   };
 }
 
-/** Draw the looping video, cover-fit to the canvas */
 function drawVideo() {
-  if (video.readyState < 2) {
-    return;
-  }
+  if (video.readyState < 2) return;
 
   const vw = video.videoWidth;
   const vh = video.videoHeight;
   const cw = cssW();
   const ch = cssH();
 
-  // Cover: scale so the video fills the canvas, centred
   const scale = Math.max(cw / vw, ch / vh);
   const dw = vw * scale;
   const dh = vh * scale;
@@ -67,7 +80,6 @@ function drawVideo() {
   ctx.drawImage(video, dx, dy, dw, dh);
 }
 
-/** Draw the always-visible red hit-square */
 function drawTouchZone() {
   const r = touchZone();
   ctx.save();
@@ -77,66 +89,61 @@ function drawTouchZone() {
   ctx.restore();
 }
 
-/** Draw the text overlay at a given alpha */
 function drawText(text) {
   const cw = cssW();
   const ch = cssH();
+  const maxWidth = cw * 0.8;
+  const fontSize = Math.min(cw * 0.10, ch * 0.12, 50);
+  const lineHeight = fontSize * 1.3;
 
-  // Black overlay behind the text
   ctx.save();
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, cw, ch);
   ctx.restore();
 
-  // Text text
-  const fontSize = Math.min(cw * 0.10, ch * 0.12, 60);
   ctx.save();
   ctx.fillStyle = '#ffffff';
   ctx.font = `500 ${fontSize}px CustomFont`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  ctx.fillText(text, cw / 2, ch / 2);
+  const words = text.split(' ');
+  const lines = [];
+  let current = '';
+  for (const word of words) {
+    const test = current ? `${current} ${word}` : word;
+    if (ctx.measureText(test).width > maxWidth && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = test;
+    }
+  }
+  if (current) lines.push(current);
+
+  const totalHeight = lines.length * lineHeight;
+  const startY = ch / 2 - totalHeight / 2 + lineHeight / 2;
+  lines.forEach((line, i) => {
+    ctx.fillText(line, cw / 2, startY + i * lineHeight);
+  });
+
   ctx.restore();
 }
 
 /* ── Main render loop ─────────────────────────────── */
 function render(ts) {
-  // ctx.clearRect(0, 0, cssW(), cssH());
-
   if (state === State.IDLE) {
     drawVideo();
     drawTouchZone();
 
   } else if (state === State.Text) {
     const elapsed = ts - TextStartTime;
-    const total = TRANSITION_DURATION + TEXT_STAGE + TRANSITION_DURATION;
 
-    if (elapsed < TRANSITION_DURATION) {
-      // Fade in
-      TextAlpha = elapsed / TRANSITION_DURATION;
-      drawVideo();
-      drawText('Text', TextAlpha);
-
-    } else if (elapsed < TRANSITION_DURATION + TEXT_STAGE) {
-      // Hold
-      drawText('Text', 1);
-    } else if (elapsed < total) {
-      // Fade out
-      TextAlpha = 1 - (elapsed - TRANSITION_DURATION - TEXT_STAGE) / TRANSITION_DURATION;
-      drawVideo();
-      drawText('Text', TextAlpha);
-
+    if (elapsed < TEXT_STAGE) {
+      drawText(currentSentence);
     } else {
-      // Sequence done → back to IDLE
       state = State.IDLE;
-      drawVideo();
-      drawTouchZone();
     }
-
-  } else if (state === State.RETURN) {
-    // Immediate snap-back (currently handled inside Text fade-out)
-    state = State.IDLE;
   }
 
   requestAnimationFrame(render);
@@ -146,10 +153,8 @@ requestAnimationFrame(render);
 
 /* ── Input handling ───────────────────────────────── */
 function handleInteraction(clientX, clientY) {
-  // On first user gesture, try to start video playback
   if (video.paused) video.play().catch(() => { });
-
-  if (state !== State.IDLE) return; // ignore during animation
+  if (state !== State.IDLE) return;
 
   const r = touchZone();
   if (
@@ -158,6 +163,7 @@ function handleInteraction(clientX, clientY) {
   ) {
     state = State.Text;
     TextStartTime = performance.now();
+    currentSentence = randomSentence();
   }
 }
 
