@@ -1,8 +1,14 @@
+import data from './data.js';
+import bg from './assets/bg_text.jpg';
+
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
 const video = document.getElementById('bg-video');
-const font = new FontFace('CustomFont', 'url(BigCaslon.otf)');
-import data from './data.js';
+const font = new FontFace('CustomFont', 'url(IM_Fell_English_Regular.otf)');
+const sound = document.getElementById('interaction-sound');
+
+const bgIMG = new Image();
+bgIMG.src = bg;
 
 font.load().then((font) => {
   document.fonts.add(font);
@@ -28,7 +34,7 @@ const State = Object.freeze({ IDLE: 'IDLE', Text: 'Text' });
 let state = State.IDLE;
 
 /* ── Text display duration ───────────────────────── */
-const TEXT_STAGE = 3000;
+const TEXT_STAGE = 5000;
 let TextStartTime = 0;
 
 /* ── Resize handling ──────────────────────────────── */
@@ -56,18 +62,18 @@ function touchZone() {
   const cx = cssW() / 2;
   const cy = cssH() / 2;
   return {
-    x: cx + cssW() * 0.1,
+    x: cx + cssW() * 0.05,
     y: cy - cssH() * 0.25,
-    w: cssW() * 0.35,
+    w: cssW() * 0.45,
     h: cssH() * 0.3
   };
 }
 
-function drawVideo() {
-  if (video.readyState < 2) return;
+function drawVideo(asset) {
+  if (asset.readyState < 2) return;
 
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
+  const vw = asset.videoWidth;
+  const vh = asset.videoHeight;
   const cw = cssW();
   const ch = cssH();
 
@@ -77,8 +83,9 @@ function drawVideo() {
   const dx = (cw - dw) / 2;
   const dy = (ch - dh) / 2;
 
-  ctx.drawImage(video, dx, dy, dw, dh);
+  ctx.drawImage(asset, dx, dy, dw, dh);
 }
+
 
 function drawTouchZone() {
   const r = touchZone();
@@ -93,12 +100,11 @@ function drawText(text) {
   const cw = cssW();
   const ch = cssH();
   const maxWidth = cw * 0.8;
-  const fontSize = Math.min(cw * 0.10, ch * 0.12, 50);
+  const fontSize = Math.min(cw * 0.07, ch * 0.1, 65);
   const lineHeight = fontSize * 1.3;
 
   ctx.save();
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, cw, ch);
+  ctx.drawImage(bgIMG, 0, 0, cw, ch);
   ctx.restore();
 
   ctx.save();
@@ -107,20 +113,23 @@ function drawText(text) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  const words = text.split(' ');
   const lines = [];
-  let current = '';
-  for (const word of words) {
-    const test = current ? `${current} ${word}` : word;
-    if (ctx.measureText(test).width > maxWidth && current) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = test;
+  for (const segment of text.split('\n')) {
+    const words = segment.split(' ');
+    let current = '';
+    for (const word of words) {
+      const test = current ? `${current} ${word}` : word;
+      if (ctx.measureText(test).width > maxWidth && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = test;
+      }
     }
+    if (current) lines.push(current);
   }
-  if (current) lines.push(current);
 
+  // Draw lines centred vertically as a block
   const totalHeight = lines.length * lineHeight;
   const startY = ch / 2 - totalHeight / 2 + lineHeight / 2;
   lines.forEach((line, i) => {
@@ -133,7 +142,7 @@ function drawText(text) {
 /* ── Main render loop ─────────────────────────────── */
 function render(ts) {
   if (state === State.IDLE) {
-    drawVideo();
+    drawVideo(video);
     drawTouchZone();
 
   } else if (state === State.Text) {
@@ -155,7 +164,6 @@ requestAnimationFrame(render);
 function handleInteraction(clientX, clientY) {
   if (video.paused) video.play().catch(() => { });
   if (state !== State.IDLE) return;
-
   const r = touchZone();
   if (
     clientX >= r.x && clientX <= r.x + r.w &&
@@ -164,6 +172,8 @@ function handleInteraction(clientX, clientY) {
     state = State.Text;
     TextStartTime = performance.now();
     currentSentence = randomSentence();
+    sound.currentTime = 0; // rewind in case it's still playing from last time
+    sound.play().catch(() => { });
   }
 }
 
