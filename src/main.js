@@ -181,8 +181,8 @@ canvas.addEventListener('click', e => {
   handleInteraction(e.clientX, e.clientY);
 });
 
-// canvas.addEventListener('touchend', e => {
-//   e.preventDefault();
-//   const t = e.changedTouches[0];
-//   handleInteraction(t.clientX, t.clientY);
-// }, { passive: false });
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  handleInteraction(t.clientX, t.clientY);
+}, { passive: false });
