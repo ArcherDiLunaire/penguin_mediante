@@ -1,25 +1,117 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="src/style.scss" />
-    <title>penguin-mediante</title>
-  </head>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="src/style.scss" />
+  <title>penguin-mediante</title>
+</head>
+
 <body>
-  <canvas id="stage"></canvas>
- 
-  <!-- Hidden video element used as canvas texture source -->
-  <video
-    id="bg-video"
-    src="/src/assets/Pitonisa.webm"
-    muted
-    loop
-    playsinline
-    crossorigin="anonymous"
-  ></video>
+  <div class="video">
+    <div id="canvas"></div>
+    <div id="touch-zone"></div>
+
+    <div class="wrapper">
+      <div class="plane">
+        <!-- Texture 0: Pitonisa bg video -->
+        <video id="bg-video" playsinline loop muted
+               src="/src/assets/Pitonisa.webm"
+               data-sampler="firstTexture"
+               preload="auto" crossorigin="anonymous"></video>
+
+        <!-- Texture 1: output of the noise-distortion WebGL pass.
+             Has its own WebGL context; CurtainsJS reads its pixels
+             as a canvas texture just like before. -->
+        <canvas id="text-canvas"
+                data-sampler="secondTexture"
+                width="1080" height="1920"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Source material for the distortion pass (never shown directly) -->
+  <video id="text-video" playsinline loop muted
+         src="/src/assets/bg_text.webm"
+         preload="auto" crossorigin="anonymous"></video>
+
+  <img id="text-image" src="/src/assets/bg_text_1.jpg" crossorigin="anonymous" />
+
+  <!-- Intermediate 2-D canvas: text-video frame + sentence text.
+       Fed as a texture into the distortion shader. -->
+  <canvas id="source-canvas" width="1080" height="1920"></canvas>
+
   <audio id="interaction-sound" src="/src/assets/audio.mp3" preload="auto"></audio>
- 
-  <script type="module" src="/src/main.js"></script>
+
+  <!-- ─── CurtainsJS vertex shader ──────────────────────────── -->
+  <script id="vert" type="text">
+    precision mediump float;
+    attribute vec3 aVertexPosition;
+    attribute vec2 aTextureCoord;
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+    uniform mat4 firstTextureMatrix;
+    uniform mat4 secondTextureMatrix;
+    varying vec3 vVertexPosition;
+    varying vec2 vTextureCoord;
+    varying vec2 vFirstTextureCoord;
+    varying vec2 vSecondTextureCoord;
+    uniform float uTransitionTimer;
+    void main() {
+      gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+      vTextureCoord       = aTextureCoord;
+      vFirstTextureCoord  = (firstTextureMatrix  * vec4(aTextureCoord, 0.0, 1.0)).xy;
+      vSecondTextureCoord = (secondTextureMatrix * vec4(aTextureCoord, 0.0, 1.0)).xy;
+      vVertexPosition     = aVertexPosition;
+    }
+  </script>
+
+  <!-- ─── CurtainsJS fragment shader ───────────────────────── -->
+  <script id="frag" type="text">
+    precision mediump float;
+    varying vec3 vVertexPosition;
+    varying vec2 vTextureCoord;
+    varying vec2 vFirstTextureCoord;
+    varying vec2 vSecondTextureCoord;
+    uniform float uTransitionTimer;
+    uniform float uTimer;
+    uniform float uTo;
+    uniform float uFrom;
+    uniform sampler2D firstTexture;
+    uniform sampler2D secondTexture;
+
+    vec4 getTextureByIndex(float index, vec2 vUv) {
+      vec4 result;
+      if (index == 0.) result = texture2D(firstTexture,  vUv);
+      if (index == 1.) result = texture2D(secondTexture, vUv);
+      return result;
+    }
+    float circle(in vec2 uv, in float radius, in float sharpness) {
+      float dist = length(uv - vec2(0.5));
+      return 1. - smoothstep(radius - sharpness, radius, dist);
+    }
+    void main() {
+      float progress    = fract(uTransitionTimer);
+      vec2  center      = vec2(0.5);
+      vec2  centerVector = vFirstTextureCoord - center;
+      vec2  vUv         = (vFirstTextureCoord - vec2(0.5)) * (0.2 + 0.8) + vec2(0.5)
+                          + 0.6 * vec2(0., 1. - 1.0);
+      float mask        = step(vTextureCoord.y, 1.0);
+      float circleProgress = circle(vTextureCoord, progress * 0.9, 0.2);
+      float ease        = progress * (2. - progress);
+      vec2  nextUV      = vUv + centerVector * (circleProgress - 1.0)
+                              + centerVector * (1. - ease) * 0.;
+      vec2  currentUV   = vUv - centerVector * circleProgress * 0.5
+                              - centerVector * progress * 0.2;
+      float currentTexture = mod(uFrom, 3.);
+      float nextTexture    = mod(uTo,   3.);
+      vec4  current = getTextureByIndex(currentTexture, currentUV);
+      vec4  next    = getTextureByIndex(nextTexture,    nextUV);
+      gl_FragColor = mix(vec4(0., 0., 0., 0.), mix(current, next, circleProgress), mask);
+    }
+  </script>
+
+  <script type="module" src="/src/app.js"></script>
 </body>
 </html>
