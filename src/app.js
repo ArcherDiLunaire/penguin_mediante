@@ -238,17 +238,17 @@ function renderDistortionPass(t) {
  *  SOURCE CANVAS (2-D)
  * ════════════════════════════════════════════════════════════════ */
 function renderSourceCanvas() {
-  if (textVideo.readyState >= 2) {
-    const vw = textVideo.videoWidth  || SW;
-    const vh = textVideo.videoHeight || SH;
-    const scale = Math.max(SW / vw, SH / vh);
-    const dw = vw * scale, dh = vh * scale;
-    sCtx.drawImage(textVideo, (SW - dw) / 2, (SH - dh) / 2, dw, dh);
-  } else {
-    sCtx.fillStyle = '#000';
-    sCtx.fillRect(0, 0, SW, SH);
-  }
-  // sCtx.drawImage(textImage, 0, 0, SW, SH);
+  // if (textVideo.readyState >= 2) {
+  //   const vw = textVideo.videoWidth  || SW;
+  //   const vh = textVideo.videoHeight || SH;
+  //   const scale = Math.max(SW / vw, SH / vh);
+  //   const dw = vw * scale, dh = vh * scale;
+  //   sCtx.drawImage(textVideo, (SW - dw) / 2, (SH - dh) / 2, dw, dh);
+  // } else {
+  //   sCtx.fillStyle = '#000';
+  //   sCtx.fillRect(0, 0, SW, SH);
+  // }
+  sCtx.drawImage(textImage, 0, 0, SW, SH);
 
   if (!currentSentence) return;
 
