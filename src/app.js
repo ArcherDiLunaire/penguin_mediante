@@ -12,20 +12,20 @@ import data from './data.js';
  * ════════════════════════════════════════════════════════════════ */
 const params = {
   showTouchZone:       true,
-  transitionDuration:  3.0,   // seconds
-  showDuration:        7.0,  // second
-  distortionStrength:  0.012,
-  blurStrength:        0.01,
+  transitionDuration:  4.0,   // seconds
+  showDuration:        8.0,  // second
+  distortionStrength:  0.008, // shader distortion strength
+  blurStrength:        0.008, // shader blur strength
 };
 
-const gui = new dat.GUI({ width: 400 });
-gui.add(params, 'showTouchZone')
-   .name('Show touch zone')
-   .onChange(v => { touchZoneEl.style.display = v ? '' : 'none'; });
-gui.add(params, 'transitionDuration', 1.0, 6.0, 0.1).name('Transition (s)');
-gui.add(params, 'showDuration',       2, 10, 0.5).name('Text duration (s)');
-gui.add(params, 'distortionStrength', 0.0, 0.08,  0.001).name('Text distortion strength');
-gui.add(params, 'blurStrength',         0.0, 0.02,  0.001).name('Text blur strength');
+// const gui = new dat.GUI({ width: 400 });
+// gui.add(params, 'showTouchZone')
+//    .name('Show touch zone')
+//    .onChange(v => { touchZoneEl.style.display = v ? '' : 'none'; });
+// gui.add(params, 'transitionDuration', 1.0, 6.0, 0.1).name('Transition (s)');
+// gui.add(params, 'showDuration',       2, 10, 0.5).name('Text duration (s)');
+// gui.add(params, 'distortionStrength', 0.0, 0.08,  0.001).name('Text distortion strength');
+// gui.add(params, 'blurStrength',         0.0, 0.02,  0.001).name('Text blur strength');
 
 /* ── State ──────────────────────────────────────────────────── */
 const State = Object.freeze({ IDLE: 'IDLE', SHOWING: 'SHOWING' });
