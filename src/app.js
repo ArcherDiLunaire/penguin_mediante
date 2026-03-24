@@ -352,6 +352,7 @@ window.addEventListener('load', () => {
     gsap.to(fake, {
       duration: params.transitionDuration,
       progress: 1,
+      ease: 'none',
       onUpdate()   { plane.uniforms.transitionTimer.value = fake.progress; },
       onComplete() {
         plane.uniforms.from.value = toIndex;
