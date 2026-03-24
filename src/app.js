@@ -390,7 +390,7 @@ window.addEventListener('load', () => {
       }
 
       videoWrap.addEventListener('click',    e => handleInteraction(e.clientX, e.clientY));
-      videoWrap.addEventListener('touchend', e => {
+      videoWrap.addEventListener('touchstart', e => {
         e.preventDefault();
         const t = e.changedTouches[0];
         handleInteraction(t.clientX, t.clientY);
