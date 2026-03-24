@@ -1,11 +1,7 @@
-/**
- * app.js — v5  (dat.gui controls)
- */
-
 import { Curtains, Plane } from 'curtainsjs';
 import gsap from 'gsap';
-import * as dat from 'dat.gui';
-import data from './data.js';
+// import * as dat from 'dat.gui'; 
+import data from './predictions.js';
 
 /* ════════════════════════════════════════════════════════════════
  *  dat.gui — all tuneable parameters live here
@@ -354,9 +350,8 @@ window.addEventListener('load', () => {
 
     const fake = { progress: 0 };
     gsap.to(fake, {
-      duration: params.transitionDuration, // live from GUI
+      duration: params.transitionDuration,
       progress: 1,
-      ease: 'none',
       onUpdate()   { plane.uniforms.transitionTimer.value = fake.progress; },
       onComplete() {
         plane.uniforms.from.value = toIndex;
