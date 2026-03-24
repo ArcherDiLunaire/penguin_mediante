@@ -1,7 +1,6 @@
 import { Curtains, Plane } from 'curtainsjs';
 import gsap from 'gsap';
 // import * as dat from 'dat.gui'; 
-import data from './predictions.js';
 
 /* ════════════════════════════════════════════════════════════════
  *  dat.gui — all tuneable parameters live here
@@ -13,6 +12,9 @@ const params = {
   distortionStrength:  0.008, // shader distortion strength
   blurStrength:        0.008, // shader blur strength
 };
+
+const res = await fetch('/predictions.json');
+const data = await res.json();
 
 // const gui = new dat.GUI({ width: 400 });
 // gui.add(params, 'showTouchZone')
@@ -298,12 +300,13 @@ function insideTouchZone(x, y) {
 
 /* ── Sentences ──────────────────────────────────────────────── */
 function randomSentence() {
-  if (!data.length) return '';
+  const d = data.predictions || [];
+  if (!d.length) return '';
   let idx;
-  do { idx = Math.floor(Math.random() * data.length); }
-  while (idx === lastSentenceIdx && data.length > 1);
+  do { idx = Math.floor(Math.random() * d.length); }
+  while (idx === lastSentenceIdx && d.length > 1);
   lastSentenceIdx = idx;
-  return data[idx];
+  return d[idx];
 }
 
 /* ════════════════════════════════════════════════════════════════
