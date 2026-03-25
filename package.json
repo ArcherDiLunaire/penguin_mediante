@@ -26,17 +26,18 @@
     "appId": "com.penguin.pitonisa",
     "productName": "Pitonisa-app",
     "directories": {
-      "buildResources": "assets"
-    },
-    "files": [
-      "dist/**",
-      "electron.cjs"
-    ],
-    "mac": {
-      "target": "dmg"
-    },
-    "win": {
-      "target": "nsis"
+      "buildResources": "assets",
+      "output": "release"
     }
+  },
+  "files": [
+    "dist/**",
+    "electron.cjs"
+  ],
+  "mac": {
+    "target": "dmg"
+  },
+  "win": {
+    "target": "nsis"
   }
 }

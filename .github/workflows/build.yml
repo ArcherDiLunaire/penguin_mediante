@@ -15,10 +15,12 @@ jobs:
       - run: npm install
       - run: npm run build
       - run: npx electron-builder --mac --publish never
+      - name: List output files
+        run: find . -name "*.dmg"
       - uses: actions/upload-artifact@v4
         with:
           name: mac-build
-          path: release/*.dmg
+          path: release/**/*.dmg
 
   build-win:
     runs-on: windows-latest
@@ -30,7 +32,9 @@ jobs:
       - run: npm install
       - run: npm run build
       - run: npx electron-builder --win --publish never
+      - name: List output files
+        run: Get-ChildItem -Recurse -Filter *.exe
       - uses: actions/upload-artifact@v4
         with:
           name: win-build
-          path: release/*.exe
+          path: release/**/*.exe
