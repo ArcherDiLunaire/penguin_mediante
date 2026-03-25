@@ -13,7 +13,7 @@ const params = {
   blurStrength:        0.008, // shader blur strength
 };
 
-const res = await fetch('/predictions.json');
+const res = await fetch('predictions.json');
 const data = await res.json();
 
 // const gui = new dat.GUI({ width: 400 });
@@ -37,7 +37,6 @@ let glTimer         = 0;
 const touchZoneEl  = document.getElementById('touch-zone');
 const videoWrap    = document.querySelector('.video');
 const sound        = document.getElementById('interaction-sound');
-const textVideo    = document.getElementById('text-video');
 const textImage = document.getElementById('text-image');
 
 /* ── Source canvas (2-D) ────────────────────────────────────── */
@@ -236,16 +235,6 @@ function renderDistortionPass(t) {
  *  SOURCE CANVAS (2-D)
  * ════════════════════════════════════════════════════════════════ */
 function renderSourceCanvas() {
-  // if (textVideo.readyState >= 2) {
-  //   const vw = textVideo.videoWidth  || SW;
-  //   const vh = textVideo.videoHeight || SH;
-  //   const scale = Math.max(SW / vw, SH / vh);
-  //   const dw = vw * scale, dh = vh * scale;
-  //   sCtx.drawImage(textVideo, (SW - dw) / 2, (SH - dh) / 2, dw, dh);
-  // } else {
-  //   sCtx.fillStyle = '#000';
-  //   sCtx.fillRect(0, 0, SW, SH);
-  // }
   sCtx.drawImage(textImage, 0, 0, SW, SH);
 
   if (!currentSentence) return;
@@ -371,16 +360,12 @@ window.addEventListener('load', () => {
       secondTexture = plane.textures.find(t => t.sampler === 'secondTexture') || null;
 
       plane.videos[0].play().catch(() => {});
-      textVideo.play().catch(() => {});
-      textVideo.addEventListener('canplay', () => textVideo.pause(), { once: true });
 
       function handleInteraction(clientX, clientY) {
         if (state !== State.IDLE || isRunning) return;
         if (!insideTouchZone(clientX, clientY)) return;
 
         currentSentence = randomSentence();
-        textVideo.currentTime = 0;
-        textVideo.play().catch(() => {});
 
         sound.currentTime = 0;
         sound.play().catch(() => {});
@@ -410,7 +395,6 @@ window.addEventListener('load', () => {
           state = State.IDLE;
           document.body.classList.remove('state-showing');
           triggerTransition(0, () => {
-            textVideo.pause();
             currentSentence = '';
           });
         }
